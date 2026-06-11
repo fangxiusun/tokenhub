@@ -1,0 +1,32 @@
+id: en
+translation:
+  - id: welcome
+    other: "Welcome to {{.Name}}"
+  - id: login_success
+    other: "Login successful"
+  - id: login_failed
+    other: "Login failed"
+  - id: register_success
+    other: "Registration successful"
+  - id: register_failed
+    other: "Registration failed"
+  - id: logout_success
+    other: "Logout successful"
+  - id: not_logged_in
+    other: "Not logged in"
+  - id: unauthorized
+    other: "Unauthorized"
+  - id: forbidden
+    other: "Forbidden"
+  - id: not_found
+    other: "Not found"
+  - id: internal_error
+    other: "Internal server error"
+  - id: rate_limit_exceeded
+    other: "Rate limit exceeded"
+  - id: invalid_request
+    other: "Invalid request"
+  - id: success
+    other: "Operation successful"
+  - id: failed
+    other: "Operation failed"

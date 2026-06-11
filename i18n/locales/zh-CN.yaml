@@ -1,0 +1,32 @@
+id: zh-CN
+translation:
+  - id: welcome
+    other: "欢迎使用 {{.Name}}"
+  - id: login_success
+    other: "登录成功"
+  - id: login_failed
+    other: "登录失败"
+  - id: register_success
+    other: "注册成功"
+  - id: register_failed
+    other: "注册失败"
+  - id: logout_success
+    other: "退出成功"
+  - id: not_logged_in
+    other: "未登录"
+  - id: unauthorized
+    other: "未授权"
+  - id: forbidden
+    other: "禁止访问"
+  - id: not_found
+    other: "未找到"
+  - id: internal_error
+    other: "内部错误"
+  - id: rate_limit_exceeded
+    other: "请求过于频繁"
+  - id: invalid_request
+    other: "无效请求"
+  - id: success
+    other: "操作成功"
+  - id: failed
+    other: "操作失败"

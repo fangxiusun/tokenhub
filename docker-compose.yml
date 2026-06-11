@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: your-project
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GIN_MODE=release
+      - PORT=3000
+      - SQL_DSN=${SQL_DSN:-}
+      - REDIS_CONN_STRING=${REDIS_CONN_STRING:-}
+      - SESSION_SECRET=${SESSION_SECRET:-your-secret-key}
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data:/data
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+
+volumes:
+  redis-data:
+
+networks:
+  app-network:
+    driver: bridge

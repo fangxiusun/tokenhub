@@ -31,3 +31,4 @@ func Logger() gin.HandlerFunc {
 			clientIP, method, path, statusCode, latency, c.Request.UserAgent())
 	}
 }
+

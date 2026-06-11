@@ -47,3 +47,4 @@ func GetRandomSatisfiedChannel(group, model string) (*Channel, error) {
 	// Get the first channel (highest priority, random weight)
 	return GetChannelById(abilities[0].ChannelId)
 }
+

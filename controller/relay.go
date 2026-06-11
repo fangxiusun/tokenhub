@@ -15,3 +15,4 @@ func RelayNotFound(c *gin.Context) {
 		},
 	})
 }
+

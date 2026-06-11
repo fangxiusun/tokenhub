@@ -8,9 +8,10 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 
-	"github.com/your-username/your-project/common"
-	"github.com/your-username/your-project/controller"
-	"github.com/your-username/your-project/middleware"
+	"github.com/fangxiusun/tokenhub/common"
+	"github.com/fangxiusun/tokenhub/controller"
+	"github.com/fangxiusun/tokenhub/middleware"
+	"github.com/fangxiusun/tokenhub/model"
 )
 
 // ThemeAssets holds embedded frontend assets
@@ -40,38 +41,57 @@ func SetApiRouter(engine *gin.Engine) {
 		api.GET("/setup", getSetup)
 		api.POST("/setup", postSetup)
 
-		// User authentication
-		api.POST("/user/register", register)
-		api.POST("/user/login", login)
-		api.POST("/user/logout", logout)
+		// User authentication (public)
+		api.POST("/user/register", controller.Register)
+		api.POST("/user/login", controller.Login)
+		api.POST("/user/logout", controller.Logout)
 
 		// User self-service (requires auth)
 		user := api.Group("/user")
 		user.Use(middleware.UserAuth())
 		{
-			user.GET("/self", getSelf)
-			user.PUT("/self", updateSelf)
-			user.DELETE("/self", deleteSelf)
-			user.GET("/token", getTokens)
-			user.POST("/token", createToken)
-			user.PUT("/token/:id", updateToken)
-			user.DELETE("/token/:id", deleteToken)
+			user.GET("/self", controller.GetSelf)
+			user.PUT("/self", controller.UpdateSelf)
+			user.DELETE("/self", controller.DeleteSelf)
+			user.POST("/access-token", controller.GenerateAccessToken)
+			user.GET("/aff-code", controller.GetAffCode)
+
+			// 2FA management
+			user.POST("/2fa/enable", controller.EnableTwoFA)
+			user.POST("/2fa/verify", controller.VerifyTwoFA)
+			user.POST("/2fa/disable", controller.DisableTwoFA)
+
+			// Passkey management
+			user.POST("/passkey/enable", controller.EnablePasskey)
+			user.POST("/passkey/verify", controller.VerifyPasskey)
+			user.DELETE("/passkey", controller.DeletePasskey)
 		}
+
+		// 2FA login (no auth required)
+		api.POST("/user/login/2fa", controller.VerifyTwoFALogin)
+
+		// Passkey login (no auth required)
+		api.POST("/user/passkey/login/begin", controller.PasskeyLoginBegin)
+		api.POST("/user/passkey/login/complete", controller.PasskeyLoginComplete)
 
 		// Admin routes (requires admin auth)
 		admin := api.Group("/admin")
 		admin.Use(middleware.AdminAuth())
 		{
-			admin.GET("/user", getUsers)
-			admin.POST("/user", createUser)
-			admin.PUT("/user/:id", updateUser)
-			admin.DELETE("/user/:id", deleteUser)
+			admin.GET("/user", controller.GetAllUsers)
+			admin.GET("/user/search", controller.SearchUsers)
+			admin.GET("/user/:id", controller.GetUser)
+			admin.POST("/user", controller.CreateUser)
+			admin.PUT("/user/:id", controller.UpdateUser)
+			admin.DELETE("/user/:id", controller.DeleteUser)
+			admin.POST("/user/manage", controller.ManageUser)
 
-			admin.GET("/channel", getChannels)
-			admin.POST("/channel", createChannel)
-			admin.PUT("/channel/:id", updateChannel)
-			admin.DELETE("/channel/:id", deleteChannel)
-			admin.POST("/channel/test", testChannel)
+			// Privilege group management
+			admin.GET("/privilege-group", controller.GetAllPrivilegeGroups)
+			admin.GET("/privilege-group/:id", controller.GetPrivilegeGroup)
+			admin.POST("/privilege-group", controller.CreatePrivilegeGroup)
+			admin.PUT("/privilege-group/:id", controller.UpdatePrivilegeGroup)
+			admin.DELETE("/privilege-group/:id", controller.DeletePrivilegeGroup)
 		}
 
 		// Root routes (requires root auth)
@@ -88,6 +108,7 @@ func SetApiRouter(engine *gin.Engine) {
 func SetRelayRouter(engine *gin.Engine) {
 	relay := engine.Group("/v1")
 	relay.Use(middleware.TokenAuth())
+	relay.Use(middleware.ReadRequestBody())
 	relay.Use(middleware.Distribute())
 	{
 		relay.GET("/models", getModels)
@@ -134,146 +155,51 @@ func getStatus(c *gin.Context) {
 func getSetup(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"setup":   false,
+		"setup":   model.RootUserExists(),
 	})
 }
 
 func postSetup(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Setup completed",
-	})
-}
+	if model.RootUserExists() {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "Root user already exists",
+		})
+		return
+	}
 
-func register(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Registration successful",
-	})
-}
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Username and password are required",
+		})
+		return
+	}
 
-func login(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Login successful",
-	})
-}
+	user := model.User{
+		Username:    req.Username,
+		Password:    req.Password,
+		DisplayName: req.Username,
+		Role:        100,
+		Status:      1,
+		Group:       "default",
+	}
 
-func logout(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Logout successful",
-	})
-}
+	if err := user.Insert(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to create root user: " + err.Error(),
+		})
+		return
+	}
 
-func getSelf(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-	})
-}
-
-func updateSelf(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Update successful",
-	})
-}
-
-func deleteSelf(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Delete successful",
-	})
-}
-
-func getTokens(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    []interface{}{},
-	})
-}
-
-func createToken(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Token created",
-	})
-}
-
-func updateToken(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Token updated",
-	})
-}
-
-func deleteToken(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Token deleted",
-	})
-}
-
-func getUsers(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    []interface{}{},
-	})
-}
-
-func createUser(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "User created",
-	})
-}
-
-func updateUser(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "User updated",
-	})
-}
-
-func deleteUser(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "User deleted",
-	})
-}
-
-func getChannels(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    []interface{}{},
-	})
-}
-
-func createChannel(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Channel created",
-	})
-}
-
-func updateChannel(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Channel updated",
-	})
-}
-
-func deleteChannel(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Channel deleted",
-	})
-}
-
-func testChannel(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Channel test passed",
+		"message": "Root user created successfully",
 	})
 }
 
@@ -325,3 +251,4 @@ func imageGenerations(c *gin.Context) {
 		"message": "Image generations endpoint",
 	})
 }
+

@@ -55,3 +55,4 @@ func GetJsonType(data json.RawMessage) string {
 		return "unknown"
 	}
 }
+

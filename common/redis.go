@@ -66,3 +66,4 @@ func DeleteRedisKey(key string) error {
 	}
 	return RedisClient.Del(ctx, key).Err()
 }
+

@@ -2,7 +2,6 @@ package common
 
 import (
 	"log"
-	"os"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -40,14 +39,6 @@ func InitDatabase() (*gorm.DB, error) {
 	}
 }
 
-// GetEnvOrDefault returns the value of an environment variable or a default value
-func GetEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
 // LogDatabaseType logs the database type being used
 func LogDatabaseType() {
 	switch {
@@ -59,3 +50,4 @@ func LogDatabaseType() {
 		log.Println("Using PostgreSQL database")
 	}
 }
+

@@ -4,7 +4,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/your-username/your-project/common"
+	"github.com/fangxiusun/tokenhub/common"
 	"gorm.io/gorm"
 )
 
@@ -36,9 +36,18 @@ func Init() error {
 		&Log{},
 		&Option{},
 		&Pricing{},
+		&PrivilegeGroup{},
+		&TwoFactorAuth{},
+		&PasskeyCredential{},
+		&OAuthBinding{},
 	)
 	if err != nil {
 		return err
+	}
+
+	// Initialize default privilege group
+	if err := InitializeDefaultPrivilegeGroup(); err != nil {
+		log.Printf("Warning: Failed to initialize default privilege group: %v", err)
 	}
 
 	// Initialize batch updates
@@ -83,3 +92,4 @@ func EnqueueUpdate(update func()) {
 		log.Println("Warning: Batch update queue is full")
 	}
 }
+

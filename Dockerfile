@@ -4,16 +4,16 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app/web/default
 
 # Copy package files
-COPY web/default/package.json web/default/bun.lock* ./
+COPY web/default/package.json web/default/package-lock.json ./
 
 # Install dependencies
-RUN corepack enable && bun install --frozen-lockfile
+RUN npm ci
 
 # Copy source code
 COPY web/default/ .
 
 # Build frontend
-RUN bun run build
+RUN npm run build
 
 # Build stage for backend
 FROM golang:1.22-alpine AS backend-builder

@@ -110,3 +110,4 @@ func ValidateToken(key string) (*User, *Token, error) {
 
 	return user, token, nil
 }
+

@@ -24,3 +24,4 @@ func RequestId() gin.HandlerFunc {
 		c.Next()
 	}
 }
+

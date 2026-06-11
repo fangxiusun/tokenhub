@@ -11,3 +11,4 @@ var (
 	ErrInvalidRequest    = errors.New("invalid request")
 	ErrRateLimited       = errors.New("rate limited")
 )
+

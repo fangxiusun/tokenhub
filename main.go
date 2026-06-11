@@ -13,12 +13,12 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 
-	"github.com/your-username/your-project/common"
-	"github.com/your-username/your-project/i18n"
-	"github.com/your-username/your-project/middleware"
-	"github.com/your-username/your-project/model"
-	"github.com/your-username/your-project/router"
-	"github.com/your-username/your-project/service"
+	"github.com/fangxiusun/tokenhub/common"
+	"github.com/fangxiusun/tokenhub/i18n"
+	"github.com/fangxiusun/tokenhub/middleware"
+	"github.com/fangxiusun/tokenhub/model"
+	"github.com/fangxiusun/tokenhub/router"
+	"github.com/fangxiusun/tokenhub/service"
 )
 
 //go:embed web/default/dist
@@ -131,3 +131,4 @@ func startBackgroundTasks() {
 	// Start background tasks here
 	log.Println("Background tasks started")
 }
+

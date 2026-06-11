@@ -59,3 +59,4 @@ type ChannelRequest struct {
 	ModelRatio   float64 `json:"model_ratio"`
 	ModelPrice   float64 `json:"model_price"`
 }
+

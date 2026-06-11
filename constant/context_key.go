@@ -30,3 +30,4 @@ const (
 	RoleAdmin  = 10
 	RoleRoot   = 100
 )
+

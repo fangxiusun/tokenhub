@@ -45,3 +45,4 @@ func UpdatePricing(pricing *Pricing) error {
 func DeletePricing(modelName string) error {
 	return DB.Where("model_name = ?", modelName).Delete(&Pricing{}).Error
 }
+

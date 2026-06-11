@@ -73,3 +73,4 @@ func GetAllLogs(page, pageSize int) ([]Log, int64, error) {
 func DeleteOldLogs(days int) error {
 	return DB.Where("created_at < ?", time.Now().AddDate(0, 0, -days)).Delete(&Log{}).Error
 }
+

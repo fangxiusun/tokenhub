@@ -2,6 +2,7 @@ package common
 
 import (
 	"embed"
+	"io/fs"
 	"net/http"
 	"os"
 
@@ -39,3 +40,4 @@ func EmbedFolder(fsEmbed embed.FS, targetPath string) static.ServeFileSystem {
 		FileSystem: http.FS(efs),
 	}
 }
+

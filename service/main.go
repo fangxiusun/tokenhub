@@ -30,3 +30,4 @@ func RefundQuota(userId int, amount int) error {
 	log.Printf("Refunding %d quota to user %d", amount, userId)
 	return nil
 }
+

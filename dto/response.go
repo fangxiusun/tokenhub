@@ -76,3 +76,4 @@ type PaginatedResponse struct {
 	PageSize int         `json:"page_size"`
 	Items    interface{} `json:"items"`
 }
+

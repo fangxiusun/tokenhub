@@ -81,3 +81,4 @@ func GetChannelsByType(channelType int) ([]Channel, error) {
 	}
 	return channels, nil
 }
+

@@ -3,7 +3,7 @@ package service
 import (
 	"sync"
 
-	"github.com/your-username/your-project/model"
+	"github.com/fangxiusun/tokenhub/model"
 )
 
 var (
@@ -14,13 +14,13 @@ var (
 
 // InitChannelCache initializes the channel cache
 func InitChannelCache() {
-	channelCacheMu.Lock()
-	defer channelCacheMu.Unlock()
-
 	channels, err := model.GetAllChannels()
 	if err != nil {
 		return
 	}
+
+	channelCacheMu.Lock()
+	defer channelCacheMu.Unlock()
 
 	channelCache = make(map[int]*model.Channel)
 	for i := range channels {
@@ -40,14 +40,14 @@ func GetChannelFromCache(id int) *model.Channel {
 }
 
 // UpdateChannelCache updates the channel cache
-func UpdateChannelCache(channel *model.Channel) {
+func UpdateChannelCache(ch *model.Channel) {
 	channelCacheMu.Lock()
 	defer channelCacheMu.Unlock()
 
 	if channelCache == nil {
 		channelCache = make(map[int]*model.Channel)
 	}
-	channelCache[channel.Id] = channel
+	channelCache[ch.Id] = ch
 }
 
 // RemoveChannelFromCache removes a channel from cache
@@ -59,9 +59,8 @@ func RemoveChannelFromCache(id int) {
 }
 
 // SelectChannel selects a channel for a request
-func SelectChannel(group, model string) (*model.Channel, error) {
-	// Get abilities for the group and model
-	abilities, err := model.GetAbilitiesByGroupAndModel(group, model)
+func SelectChannel(group, modelName string) (*model.Channel, error) {
+	abilities, err := model.GetAbilitiesByGroupAndModel(group, modelName)
 	if err != nil {
 		return nil, err
 	}
@@ -70,10 +69,8 @@ func SelectChannel(group, model string) (*model.Channel, error) {
 		return nil, ErrNoAvailableChannel
 	}
 
-	// Select the first ability (highest priority)
 	ability := abilities[0]
 
-	// Get channel from cache or database
 	channel := GetChannelFromCache(ability.ChannelId)
 	if channel == nil {
 		channel, err = model.GetChannelById(ability.ChannelId)
@@ -85,3 +82,15 @@ func SelectChannel(group, model string) (*model.Channel, error) {
 
 	return channel, nil
 }
+
+// GetUserUsableGroups returns the groups a user can access
+func GetUserUsableGroups(userGroup string) map[string]bool {
+	groups := map[string]bool{
+		"default": true,
+	}
+	if userGroup != "" && userGroup != "default" {
+		groups[userGroup] = true
+	}
+	return groups
+}
+

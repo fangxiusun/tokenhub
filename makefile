@@ -2,7 +2,7 @@
 
 # Build frontend
 build-frontend:
-	cd web/default && bun install && bun run build
+	cd web/default && npm install && npm run build
 
 # Build backend (frontend must be built first)
 build-backend:
@@ -42,7 +42,7 @@ tidy:
 
 # Docker build
 docker-build:
-	docker build -t your-project .
+	docker build -t tokenhub .
 
 # Docker run
 docker-run:

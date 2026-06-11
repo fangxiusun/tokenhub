@@ -32,3 +32,4 @@ var (
 	ErrTooManyRequests  = NewAPIError(http.StatusTooManyRequests, 429, "Too many requests")
 	ErrInternalServerError = NewAPIError(http.StatusInternalServerError, 500, "Internal server error")
 )
+

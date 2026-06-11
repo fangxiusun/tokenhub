@@ -7,18 +7,38 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 
-	"github.com/your-username/your-project/common"
-	"github.com/your-username/your-project/model"
+	"github.com/fangxiusun/tokenhub/common"
+	"github.com/fangxiusun/tokenhub/constant"
+	"github.com/fangxiusun/tokenhub/model"
 )
 
 // UserAuth is a middleware that requires user authentication
 func UserAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Try JWT token first
+		authHeader := c.Request.Header.Get("Authorization")
+		if authHeader != "" {
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			claims, err := common.ValidateJWT(tokenString)
+			if err == nil {
+				// JWT is valid
+				c.Set("id", claims.UserId)
+				c.Set("username", claims.Username)
+				c.Set("role", claims.Role)
+				c.Set("status", claims.Status)
+				c.Set("group", claims.GroupId)
+				c.Next()
+				return
+			}
+		}
+
+		// Fallback to session
 		session := sessions.Default(c)
 		username := session.Get("username")
 		role := session.Get("role")
 		id := session.Get("id")
 		status := session.Get("status")
+		group := session.Get("group")
 
 		if username == nil {
 			// Check access token
@@ -32,8 +52,11 @@ func UserAuth() gin.HandlerFunc {
 				return
 			}
 
+			// Strip Bearer prefix before validating access token
+			accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+
 			// Validate access token
-			user, err := model.GetUserByUsername(accessToken)
+			user, err := model.ValidateAccessToken(accessToken)
 			if err != nil {
 				c.JSON(http.StatusUnauthorized, gin.H{
 					"success": false,
@@ -43,14 +66,23 @@ func UserAuth() gin.HandlerFunc {
 				return
 			}
 
-			username = user.Username
-			role = user.Role
-			id = user.Id
-			status = user.Status
+			if user != nil && user.Username != "" {
+				username = user.Username
+				role = user.Role
+				id = user.Id
+				status = user.Status
+			} else {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"success": false,
+					"message": "Invalid access token",
+				})
+				c.Abort()
+				return
+			}
 		}
 
 		// Check user status
-		if status != nil && status.(int) != 1 {
+		if status != nil && status.(int) != constant.UserStatusEnabled {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"message": "User is disabled",
@@ -60,7 +92,7 @@ func UserAuth() gin.HandlerFunc {
 		}
 
 		// Check role
-		if role == nil || role.(int) < 1 {
+		if role == nil || role.(int) < constant.RoleCommonUser {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"message": "Insufficient permissions",
@@ -74,6 +106,7 @@ func UserAuth() gin.HandlerFunc {
 		c.Set("role", role)
 		c.Set("id", id)
 		c.Set("status", status)
+		c.Set("group", group)
 
 		c.Next()
 	}
@@ -82,10 +115,47 @@ func UserAuth() gin.HandlerFunc {
 // AdminAuth is a middleware that requires admin authentication
 func AdminAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Try JWT token first
+		authHeader := c.Request.Header.Get("Authorization")
+		if authHeader != "" {
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			claims, err := common.ValidateJWT(tokenString)
+			if err == nil {
+				if claims.Role < 10 {
+					c.JSON(http.StatusForbidden, gin.H{
+						"success": false,
+						"message": "Admin access required",
+					})
+					c.Abort()
+					return
+				}
+				if claims.Status != constant.UserStatusEnabled {
+					c.JSON(http.StatusForbidden, gin.H{
+						"success": false,
+						"message": "User is disabled",
+					})
+					c.Abort()
+					return
+				}
+				c.Set("id", claims.UserId)
+				c.Set("username", claims.Username)
+				c.Set("role", claims.Role)
+				c.Set("status", claims.Status)
+				c.Set("group", claims.GroupId)
+				c.Next()
+				return
+			}
+		}
+
+		// Fallback to session
 		session := sessions.Default(c)
 		role := session.Get("role")
+		id := session.Get("id")
+		username := session.Get("username")
+		status := session.Get("status")
+		group := session.Get("group")
 
-		if role == nil || role.(int) < 10 {
+		if role == nil || role.(int) < constant.RoleAdminUser {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"message": "Admin access required",
@@ -94,6 +164,21 @@ func AdminAuth() gin.HandlerFunc {
 			return
 		}
 
+		// Check user status
+		if status != nil && status.(int) != constant.UserStatusEnabled {
+			c.JSON(http.StatusForbidden, gin.H{
+				"success": false,
+				"message": "User is disabled",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Set("id", id)
+		c.Set("username", username)
+		c.Set("role", role)
+		c.Set("status", status)
+		c.Set("group", group)
 		c.Next()
 	}
 }
@@ -101,10 +186,47 @@ func AdminAuth() gin.HandlerFunc {
 // RootAuth is a middleware that requires root authentication
 func RootAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Try JWT token first
+		authHeader := c.Request.Header.Get("Authorization")
+		if authHeader != "" {
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			claims, err := common.ValidateJWT(tokenString)
+			if err == nil {
+				if claims.Role < 100 {
+					c.JSON(http.StatusForbidden, gin.H{
+						"success": false,
+						"message": "Root access required",
+					})
+					c.Abort()
+					return
+				}
+				if claims.Status != constant.UserStatusEnabled {
+					c.JSON(http.StatusForbidden, gin.H{
+						"success": false,
+						"message": "User is disabled",
+					})
+					c.Abort()
+					return
+				}
+				c.Set("id", claims.UserId)
+				c.Set("username", claims.Username)
+				c.Set("role", claims.Role)
+				c.Set("status", claims.Status)
+				c.Set("group", claims.GroupId)
+				c.Next()
+				return
+			}
+		}
+
+		// Fallback to session
 		session := sessions.Default(c)
 		role := session.Get("role")
+		id := session.Get("id")
+		username := session.Get("username")
+		status := session.Get("status")
+		group := session.Get("group")
 
-		if role == nil || role.(int) < 100 {
+		if role == nil || role.(int) < constant.RoleRootUser {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"message": "Root access required",
@@ -113,6 +235,21 @@ func RootAuth() gin.HandlerFunc {
 			return
 		}
 
+		// Check user status
+		if status != nil && status.(int) != constant.UserStatusEnabled {
+			c.JSON(http.StatusForbidden, gin.H{
+				"success": false,
+				"message": "User is disabled",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Set("id", id)
+		c.Set("username", username)
+		c.Set("role", role)
+		c.Set("status", status)
+		c.Set("group", group)
 		c.Next()
 	}
 }
@@ -174,3 +311,4 @@ func extractToken(c *gin.Context) string {
 	// Check query parameter
 	return c.Query("api_key")
 }
+
